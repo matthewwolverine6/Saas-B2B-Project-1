@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     background-color: #F6F5F2;
     color: #18181B;
@@ -63,6 +68,14 @@
     background: #FFFFFF !important;
     background-color: #FFFFFF !important;
     box-shadow: none !important;
+  }
+  html, body, #root {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .print-root {
+    display: block !important;
   }
   body {
     color: #000000 !important;

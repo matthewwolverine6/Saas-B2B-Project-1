@@ -16,7 +16,6 @@ import {
   RotateCcw,
   Database,
   RefreshCw,
-  ExternalLink,
   ShieldCheck,
   CheckCircle2,
   Lock,
@@ -229,6 +228,7 @@ export default function App() {
 
   const [copiedAvito, setCopiedAvito] = useState(false);
   const [copiedMessenger, setCopiedMessenger] = useState(false);
+  const [printNotice, setPrintNotice] = useState(false);
 
   // Безопасный индекс активного изделия
   const safeIdx = Math.min(Math.max(0, activeItemIdx), Math.max(0, items.length - 1));
@@ -650,7 +650,25 @@ export default function App() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const isInAppWebView =
+      /Telegram|VKAndroidApp|Vkontakte|vkShare/i.test(ua) ||
+      (typeof window !== 'undefined' && Boolean(window.TelegramWebviewProxy));
+
+    if (typeof window === 'undefined' || typeof window.print !== 'function') {
+      setPrintNotice(true);
+      return;
+    }
+
+    if (isInAppWebView) {
+      setPrintNotice(true);
+    }
+
+    try {
+      window.print();
+    } catch {
+      setPrintNotice(true);
+    }
   };
 
   const dimensionFields = [
@@ -660,7 +678,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F6F5F2] text-[#18181B] flex justify-center font-sans antialiased">
+    <div className="print-root min-h-screen bg-[#F6F5F2] text-[#18181B] flex justify-center font-sans antialiased">
       {/* Печатный одностраничный бланк замера (виден только при window.print()) */}
       <PrintSheet
         calculation={calculation}
@@ -674,44 +692,45 @@ export default function App() {
         allCalculations={allCalculations}
       />
 
-      <main className="w-full max-w-[480px] min-h-screen bg-[#F6F5F2] flex flex-col justify-between pb-28 md:pb-8 border-x border-[#E4E4E7]/60 no-print">
+      <main className="w-full max-w-[480px] min-w-0 min-h-screen bg-[#F6F5F2] flex flex-col pb-28 md:pb-8 border-x border-[#E4E4E7]/60 overflow-x-clip no-print">
         {/* Шапка приложения */}
         <header className="bg-[#FFFFFF] border-b border-[#E4E4E7] px-4 py-3 shadow-sm sticky top-0 z-20">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#F4F4F5]">
-            <div className="flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 text-[#059669]" strokeWidth={2.2} />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#71717A]">
+          <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-[#F4F4F5]">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Calculator className="w-4 h-4 text-[#059669] shrink-0" strokeWidth={2.2} />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#71717A] truncate">
                 {viewMode === 'master' ? 'Цеховой расчёт' : 'Смета заказчику'}
               </span>
             </div>
             {viewMode === 'master' && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDbOpen(!isDbOpen)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${
+                  className={`min-h-[40px] flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
                     isDbOpen
                       ? 'border-[#059669] bg-[#ECFDF5] text-[#059669]'
                       : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A] hover:text-[#18181B]'
                   }`}
                 >
-                  <Database className="w-3 h-3" />
+                  <Database className="w-3.5 h-3.5" />
                   <span>Прайс</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsSettingsOpen(true)}
-                  className="p-1 rounded text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#18181B] border border-[#E4E4E7]"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#18181B] border border-[#E4E4E7]"
                   title="Настройки цеха"
+                  aria-label="Настройки цеха"
                 >
-                  <Settings className="w-3.5 h-3.5" />
+                  <Settings className="w-4 h-4" />
                 </button>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-base font-bold tracking-tight text-[#18181B] leading-tight truncate">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <h1 className="text-base font-bold tracking-tight text-[#18181B] leading-tight truncate min-w-0">
               {viewMode === 'master' ? settings.masterName : 'Коммерческое предложение'}
             </h1>
 
@@ -720,7 +739,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setViewMode('master')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`min-h-[40px] px-3 rounded-md text-xs font-semibold transition-all flex items-center ${
                   viewMode === 'master'
                     ? 'bg-[#FFFFFF] text-[#18181B] shadow-sm'
                     : 'text-[#71717A] hover:text-[#18181B]'
@@ -731,7 +750,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setViewMode('client')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`min-h-[40px] px-3 rounded-md text-xs font-semibold transition-all flex items-center ${
                   viewMode === 'client'
                     ? 'bg-[#FFFFFF] text-[#059669] shadow-sm'
                     : 'text-[#71717A] hover:text-[#18181B]'
@@ -744,7 +763,7 @@ export default function App() {
 
           {/* Панель синхронизации цен с Google Диском */}
           {isDbOpen && viewMode === 'master' && (
-            <div className="mt-2.5 p-3 rounded-lg border border-[#A7F3D0] bg-[#F0FDF4] text-xs space-y-2 animate-fadeIn">
+            <div className="mt-2.5 p-3 rounded-lg border border-[#A7F3D0] bg-[#F0FDF4] text-xs space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#065F46] uppercase tracking-wide">Google Таблица</span>
                 <a
@@ -761,26 +780,26 @@ export default function App() {
                   type="text"
                   value={sheetIdInput}
                   onChange={(e) => setSheetIdInput(e.target.value)}
-                  className="flex-1 px-2 py-1 rounded border border-[#A7F3D0] bg-[#FFFFFF] text-xs font-mono text-[#18181B] focus:outline-none"
+                  className="min-w-0 flex-1 min-h-[40px] px-2.5 py-1 rounded-lg border border-[#A7F3D0] bg-[#FFFFFF] text-base md:text-xs font-mono text-[#18181B] focus:outline-none"
                 />
                 <button
                   type="button"
                   disabled={syncLoading}
                   onClick={handleSyncFromGoogle}
-                  className="px-2.5 py-1 rounded bg-[#059669] text-[#FFFFFF] font-semibold text-xs flex items-center gap-1"
+                  className="min-h-[40px] px-3 py-1 rounded-lg bg-[#059669] text-[#FFFFFF] font-semibold text-xs flex items-center gap-1 shrink-0"
                 >
-                  <RefreshCw className={`w-3 h-3 ${syncLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? 'animate-spin' : ''}`} />
                   <span>Обновить</span>
                 </button>
               </div>
-              <div className="text-[10px] text-[#065F46]/80">{syncStatus}</div>
+              <div className="text-[10px] text-[#065F46]/80 break-words">{syncStatus}</div>
             </div>
           )}
         </header>
 
-        <div className="px-4 py-3 space-y-3.5">
+        <div className="px-4 py-3 space-y-3.5 min-w-0">
           {/* Мульти-смета: Вкладки изделий по объекту */}
-          <section className="space-y-1.5">
+          <section className="space-y-1.5 min-w-0">
             <div className="flex items-center justify-between text-xs px-0.5 min-h-[32px]">
               <div className="flex items-center gap-2">
                 <span className="font-bold uppercase tracking-wider text-[11px] text-[#18181B]">ИЗДЕЛИЯ</span>
@@ -793,7 +812,7 @@ export default function App() {
                 type="button"
                 disabled={items.length >= MAX_ITEMS}
                 onClick={handleAddItem}
-                className="min-h-[28px] px-2.5 py-1 rounded-lg border border-[#A7F3D0] bg-[#ECFDF5] hover:bg-[#D1FAE5] active:bg-[#A7F3D0] text-[#065F46] font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                className="min-h-[40px] px-3 py-1 rounded-lg border border-[#A7F3D0] bg-[#ECFDF5] hover:bg-[#D1FAE5] active:bg-[#A7F3D0] text-[#065F46] font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                 title={`Добавить ещё одно изделие (до ${MAX_ITEMS} шт.)`}
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -811,8 +830,16 @@ export default function App() {
                 return (
                   <div
                     key={it.id || idx}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setActiveItemIdx(idx)}
-                    className={`relative shrink-0 cursor-pointer min-w-[110px] max-w-[150px] flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition-all select-none ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveItemIdx(idx);
+                      }
+                    }}
+                    className={`relative shrink-0 cursor-pointer min-w-[110px] max-w-[150px] min-h-[44px] flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition-all select-none ${
                       isActive
                         ? 'bg-[#059669] text-[#FFFFFF] shadow-sm'
                         : 'text-[#71717A] bg-transparent hover:bg-[#F4F4F5]'
@@ -822,9 +849,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={(e) => handleRemoveItem(idx, e)}
-                        className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[11px] font-black leading-none transition-all ${
+                        className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black leading-none transition-all ${
                           isActive
-                            ? 'text-white bg-black/35 hover:bg-black/50 border border-white/50 shadow-xs'
+                            ? 'text-white bg-black/35 hover:bg-black/50 border border-white/50 shadow-sm'
                             : 'text-[#71717A] hover:text-[#DC2626] hover:bg-[#FEE2E2]'
                         }`}
                         title="Удалить изделие"
@@ -877,14 +904,15 @@ export default function App() {
                 placeholder="Имя заказчика"
                 value={clientInfo.name}
                 onChange={(e) => setClientInfo((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs focus:outline-none focus:border-[#059669]"
+                className="w-full min-h-[42px] px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-base md:text-xs focus:outline-none focus:border-[#059669]"
               />
               <input
                 type="text"
+                inputMode="tel"
                 placeholder="Телефон"
                 value={clientInfo.phone}
                 onChange={(e) => setClientInfo((prev) => ({ ...prev, phone: e.target.value }))}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs tabular-nums focus:outline-none focus:border-[#059669]"
+                className="w-full min-h-[42px] px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-base md:text-xs tabular-nums focus:outline-none focus:border-[#059669]"
               />
             </div>
             <div className="relative text-xs">
@@ -893,14 +921,14 @@ export default function App() {
                 placeholder="Адрес замера / монтажа (ул., дом, кв.)"
                 value={clientInfo.address}
                 onChange={(e) => setClientInfo((prev) => ({ ...prev, address: e.target.value }))}
-                className="w-full px-2.5 py-1.5 pr-7 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs focus:outline-none focus:border-[#059669]"
+                className="w-full min-h-[42px] px-2.5 py-1.5 pr-7 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-base md:text-xs focus:outline-none focus:border-[#059669]"
               />
               <MapPin className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </section>
 
           {/* Панель активного изделия: количество и фиксация замеров */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E4E4E7] bg-[#FFFFFF] shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-[#E4E4E7] bg-[#FFFFFF] shadow-sm">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-[#18181B]">Количество:</span>
               <div className="flex items-center border border-[#E4E4E7] rounded-lg overflow-hidden bg-[#FAFAFA]">
@@ -908,10 +936,10 @@ export default function App() {
                   type="button"
                   disabled={activeItem.isConfirmed || (activeItem.quantity || 1) <= 1}
                   onClick={() => updateActiveItem({ quantity: Math.max(1, (activeItem.quantity || 1) - 1) })}
-                  className="w-8 h-8 flex items-center justify-center font-bold text-sm text-[#71717A] hover:bg-[#F4F4F5] disabled:opacity-30 active:bg-[#E4E4E7] transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center font-bold text-sm text-[#71717A] hover:bg-[#F4F4F5] disabled:opacity-30 active:bg-[#E4E4E7] transition-colors"
                   aria-label="Уменьшить количество"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
                 <span className="min-w-[44px] px-1 text-center text-xs font-bold text-[#18181B] tabular-nums">
                   {activeItem.quantity || 1} шт.
@@ -920,10 +948,10 @@ export default function App() {
                   type="button"
                   disabled={activeItem.isConfirmed || (activeItem.quantity || 1) >= 99}
                   onClick={() => updateActiveItem({ quantity: Math.min(99, (activeItem.quantity || 1) + 1) })}
-                  className="w-8 h-8 flex items-center justify-center font-bold text-sm text-[#71717A] hover:bg-[#F4F4F5] disabled:opacity-30 active:bg-[#E4E4E7] transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center font-bold text-sm text-[#71717A] hover:bg-[#F4F4F5] disabled:opacity-30 active:bg-[#E4E4E7] transition-colors"
                   aria-label="Увеличить количество"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -931,7 +959,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => updateActiveItem({ isConfirmed: !activeItem.isConfirmed })}
-              className={`min-h-[36px] px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
+              className={`min-h-[44px] px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
                 activeItem.isConfirmed
                   ? 'border border-[#E4E4E7] bg-[#F4F4F5] text-[#18181B] hover:bg-[#E4E4E7]'
                   : 'bg-[#059669] hover:bg-[#047857] text-[#FFFFFF]'
@@ -978,7 +1006,7 @@ export default function App() {
                     key={preset.id}
                     type="button"
                     onClick={() => applyPreset(preset)}
-                    className={`p-2 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    className={`min-w-0 p-2 rounded-xl border text-left flex flex-col justify-between transition-all ${
                       isActive
                         ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] shadow-sm'
                         : 'border-[#E4E4E7] bg-[#FFFFFF] text-[#18181B] hover:border-[#D4D4D8]'
@@ -1219,11 +1247,11 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => stepDimension(id === 'height' ? 'heightRaw' : id === 'width' ? 'widthRaw' : 'depthRaw', -50, spec)}
-                      className="min-w-[50px] min-h-[40px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-xs font-semibold text-[#18181B] active:bg-[#F4F4F5] tabular-nums"
+                      className="min-w-[50px] min-h-[44px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-xs font-semibold text-[#18181B] active:bg-[#F4F4F5] tabular-nums"
                     >
                       −50
                     </button>
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-0">
                       <input
                         id={`input-${id}`}
                         type="text"
@@ -1231,7 +1259,7 @@ export default function App() {
                         value={raw}
                         onChange={handleNumericInput(id === 'height' ? 'heightRaw' : id === 'width' ? 'widthRaw' : 'depthRaw', 4)}
                         placeholder={String(spec.defaultVal)}
-                        className="w-full min-h-[40px] px-3 pr-8 rounded-lg text-sm font-bold text-[#18181B] border border-[#D4D4D8] bg-[#FFFFFF] focus:outline-none focus:border-[#059669] tabular-nums"
+                        className="w-full min-h-[44px] px-3 pr-8 rounded-lg text-base md:text-sm font-bold text-[#18181B] border border-[#D4D4D8] bg-[#FFFFFF] focus:outline-none focus:border-[#059669] tabular-nums"
                       />
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#71717A] pointer-events-none">
                         мм
@@ -1240,19 +1268,19 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => stepDimension(id === 'height' ? 'heightRaw' : id === 'width' ? 'widthRaw' : 'depthRaw', 50, spec)}
-                      className="min-w-[50px] min-h-[40px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-xs font-semibold text-[#18181B] active:bg-[#F4F4F5] tabular-nums"
+                      className="min-w-[50px] min-h-[44px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-xs font-semibold text-[#18181B] active:bg-[#F4F4F5] tabular-nums"
                     >
                       +50
                     </button>
                   </div>
 
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {spec.presets.map((preset) => (
                       <button
                         key={preset}
                         type="button"
                         onClick={() => setter(String(preset))}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium border tabular-nums ${
+                        className={`min-h-[40px] px-2.5 py-1 rounded-lg text-xs font-medium border tabular-nums ${
                           Number(raw) === preset
                             ? 'border-[#059669] bg-[#ECFDF5] text-[#059669]'
                             : 'border-[#E4E4E7] bg-[#FFFFFF] text-[#71717A]'
@@ -1283,7 +1311,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => updateActiveItem({ facadeType: 'hinged' })}
-                  className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                  className={`min-w-0 min-h-[44px] p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                     activeItem.facadeType === 'hinged'
                       ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] font-bold'
                       : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A]'
@@ -1296,7 +1324,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => updateActiveItem({ facadeType: 'sliding' })}
-                  className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                  className={`min-w-0 min-h-[44px] p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                     activeItem.facadeType === 'sliding'
                       ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] font-bold'
                       : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A]'
@@ -1309,7 +1337,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => updateActiveItem({ facadeType: 'none' })}
-                  className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                  className={`min-w-0 min-h-[44px] p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                     activeItem.facadeType === 'none'
                       ? 'border-[#059669] bg-[#ECFDF5] text-[#059669] font-bold'
                       : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A]'
@@ -1323,7 +1351,7 @@ export default function App() {
 
             {/* Наполнение дверей купе (если выбрано купе) */}
             {activeItem.facadeType === 'sliding' && (
-              <div className="p-2.5 rounded-lg border border-[#A7F3D0] bg-[#F0FDF4] space-y-1.5 animate-fadeIn">
+              <div className="p-2.5 rounded-lg border border-[#A7F3D0] bg-[#F0FDF4] space-y-1.5">
                 <span className="text-[11px] font-bold text-[#065F46] uppercase tracking-wide block">
                   Наполнение дверей купе:
                 </span>
@@ -1331,7 +1359,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => updateActiveItem({ coupeFilling: 'ldsp' })}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
+                    className={`min-w-0 min-h-[42px] py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
                       activeItem.coupeFilling === 'ldsp'
                         ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                         : 'border-[#A7F3D0] bg-[#FFFFFF] text-[#065F46]'
@@ -1342,7 +1370,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => updateActiveItem({ coupeFilling: 'mirror' })}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
+                    className={`min-w-0 min-h-[42px] py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
                       activeItem.coupeFilling === 'mirror'
                         ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                         : 'border-[#A7F3D0] bg-[#FFFFFF] text-[#065F46]'
@@ -1353,7 +1381,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => updateActiveItem({ coupeFilling: 'combo' })}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
+                    className={`min-w-0 min-h-[42px] py-1.5 px-2 rounded-md text-xs font-semibold border transition-all ${
                       activeItem.coupeFilling === 'combo'
                         ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                         : 'border-[#A7F3D0] bg-[#FFFFFF] text-[#065F46]'
@@ -1383,13 +1411,13 @@ export default function App() {
                       key={mat.id}
                       type="button"
                       onClick={() => updateActiveItem({ materialId: mat.id })}
-                      className={`min-h-[54px] p-2 rounded-lg text-left border flex flex-col justify-between transition-colors ${
+                      className={`min-w-0 min-h-[54px] p-2 rounded-lg text-left border flex flex-col justify-between transition-colors ${
                         active
                           ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                           : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#18181B]'
                       }`}
                     >
-                      <span className="text-xs font-bold leading-tight truncate">{mat.name}</span>
+                      <span className="text-xs font-bold leading-tight truncate w-full">{mat.name}</span>
                       <span
                         className={`text-xs font-semibold mt-0.5 tabular-nums ${
                           active ? 'text-[#ECFDF5]' : 'text-[#059669]'
@@ -1426,14 +1454,14 @@ export default function App() {
                     key={hw.id}
                     type="button"
                     onClick={() => updateActiveItem({ hardwareId: hw.id })}
-                    className={`min-h-[52px] p-2 rounded-lg text-left border flex flex-col justify-between ${
+                    className={`min-w-0 min-h-[52px] p-2 rounded-lg text-left border flex flex-col justify-between ${
                       active
                         ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                         : 'border-[#E4E4E7] bg-[#FAFAFA] text-[#18181B]'
                     }`}
                   >
-                    <span className="text-xs font-bold leading-tight">{hw.name}</span>
-                    <span className={`text-[10px] mt-0.5 ${active ? 'text-[#ECFDF5]' : 'text-[#71717A]'}`}>
+                    <span className="text-xs font-bold leading-tight break-words">{hw.name}</span>
+                    <span className={`text-[10px] mt-0.5 break-words ${active ? 'text-[#ECFDF5]' : 'text-[#71717A]'}`}>
                       {hw.subtitle}
                     </span>
                   </button>
@@ -1452,18 +1480,19 @@ export default function App() {
                   type="button"
                   disabled={activeItem.drawers <= 0}
                   onClick={() => updateActiveItem({ drawers: Math.max(0, activeItem.drawers - 1) })}
-                  className="min-w-[40px] min-h-[40px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-[#18181B] flex items-center justify-center disabled:opacity-30"
+                  className="min-w-[44px] min-h-[44px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-[#18181B] flex items-center justify-center disabled:opacity-30 shrink-0"
+                  aria-label="Уменьшить количество ящиков"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
 
-                <div className="grid grid-cols-7 gap-1 flex-1">
+                <div className="grid grid-cols-7 gap-1 flex-1 min-w-0">
                   {[0, 1, 2, 3, 4, 5, 6].map((num) => (
                     <button
                       key={num}
                       type="button"
                       onClick={() => updateActiveItem({ drawers: num })}
-                      className={`min-h-[40px] rounded-lg text-xs font-bold border tabular-nums ${
+                      className={`min-h-[44px] rounded-lg text-xs font-bold border tabular-nums ${
                         activeItem.drawers === num
                           ? 'border-[#059669] bg-[#059669] text-[#FFFFFF]'
                           : 'border-[#E4E4E7] bg-[#FFFFFF] text-[#71717A]'
@@ -1478,7 +1507,8 @@ export default function App() {
                   type="button"
                   disabled={activeItem.drawers >= 6}
                   onClick={() => updateActiveItem({ drawers: Math.min(6, activeItem.drawers + 1) })}
-                  className="min-w-[40px] min-h-[40px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-[#18181B] flex items-center justify-center disabled:opacity-30"
+                  className="min-w-[44px] min-h-[44px] rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] text-[#18181B] flex items-center justify-center disabled:opacity-30 shrink-0"
+                  aria-label="Увеличить количество ящиков"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -1512,13 +1542,13 @@ export default function App() {
                   onChange={(e) => updateActiveItem({ markup: Number(e.target.value) })}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs mt-1.5 tabular-nums">
+                <div className="flex flex-wrap justify-between gap-1 text-xs mt-1.5 tabular-nums">
                   {[30, 40, 50, 60, 70, 80].map((preset) => (
                     <button
                       key={preset}
                       type="button"
                       onClick={() => updateActiveItem({ markup: preset })}
-                      className={`px-2 py-0.5 rounded border text-[11px] font-medium ${
+                      className={`min-h-[40px] px-2.5 py-1 rounded-lg border text-xs font-medium ${
                         activeItem.markup === preset
                           ? 'border-[#059669] text-[#059669] bg-[#ECFDF5]'
                           : 'border-[#E4E4E7] text-[#71717A] bg-[#FAFAFA]'
@@ -1536,12 +1566,12 @@ export default function App() {
           {/* Финансовая сводка для Мастера */}
           {viewMode === 'master' ? (
             <section className="rounded-xl border-2 border-[#059669] bg-[#FFFFFF] p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-[#F4F4F5] pb-2">
-                <div className="flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-[#059669]" />
-                  <h2 className="text-sm font-bold text-[#18181B]">Смета цеха: {activeItem.name}</h2>
+              <div className="flex items-center justify-between gap-2 border-b border-[#F4F4F5] pb-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Package className="w-4 h-4 text-[#059669] shrink-0" />
+                  <h2 className="text-sm font-bold text-[#18181B] truncate">Смета цеха: {activeItem.name}</h2>
                 </div>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#ECFDF5] text-[#059669] tabular-nums">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#ECFDF5] text-[#059669] tabular-nums shrink-0">
                   Налог {settings.taxRate}%
                 </span>
               </div>
@@ -1806,11 +1836,33 @@ export default function App() {
         </div>
       </main>
 
+      {/* Уведомление при печати из встроенного браузера Telegram / ВК */}
+      {printNotice && (
+        <div className="fixed bottom-20 md:bottom-4 left-3 right-3 z-40 max-w-[460px] mx-auto rounded-xl border border-[#F59E0B] bg-[#FFFBEB] p-3 shadow-lg text-xs text-[#92400E] flex items-start gap-2.5 no-print">
+          <AlertTriangle className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0 leading-snug">
+            <div className="font-bold text-[#78350F] mb-0.5">Печать / PDF может быть заблокирована</div>
+            <div>
+              Встроенный браузер Telegram или ВК ограничивает печать. Нажмите «⋯» и выберите{' '}
+              <span className="font-semibold">Открыть в Safari / Chrome</span>.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPrintNotice(false)}
+            aria-label="Закрыть подсказку"
+            className="min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-[#92400E] hover:bg-[#FEF3C7] font-bold text-base leading-none shrink-0"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Мобильный плавающий Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-[#FFFFFF]/95 backdrop-blur-md border-t border-[#E4E4E7] p-2.5 shadow-xl md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-[#FFFFFF]/95 backdrop-blur-md border-t border-[#E4E4E7] p-2.5 shadow-xl md:hidden no-print">
         <div className="max-w-[480px] mx-auto flex items-center justify-between gap-2.5">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider truncate">
               {items.length > 1 && multiSummary.validCount > 1
                 ? `Итог (${multiSummary.validCount} изд.)`
                 : `${activeItem.name}${calculation.quantity > 1 ? ` (${calculation.quantity} шт.)` : ''}`}
@@ -1823,12 +1875,12 @@ export default function App() {
                 : '—'}
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               disabled={!calculation.isValid}
               onClick={viewMode === 'master' ? handleCopyAvito : handleCopyMessenger}
-              className="min-h-[38px] px-3 rounded-lg bg-[#059669] text-white text-xs font-semibold flex items-center gap-1 shadow-sm disabled:opacity-40"
+              className="min-h-[44px] px-3 rounded-lg bg-[#059669] text-white text-xs font-semibold flex items-center gap-1 shadow-sm disabled:opacity-40"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>{viewMode === 'master' ? 'Авито' : 'Смета'}</span>
@@ -1837,7 +1889,7 @@ export default function App() {
               type="button"
               disabled={!calculation.isValid}
               onClick={handlePrint}
-              className="min-h-[38px] px-2.5 rounded-lg border border-[#059669] text-[#059669] bg-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40"
+              className="min-h-[44px] px-3 rounded-lg border border-[#059669] text-[#059669] bg-white text-xs font-semibold flex items-center gap-1 disabled:opacity-40"
               title="Печать PDF"
             >
               <Printer className="w-3.5 h-3.5" />

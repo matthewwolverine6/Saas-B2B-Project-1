@@ -12,7 +12,7 @@ export default function PrintSheet({
   isConfirmed,
   allCalculations = [],
 }) {
-  if (!calculation.isValid) return null;
+  if (!calculation?.isValid || !wireframeGeometry) return null;
 
   const { H, W, D, sections, shelvesCount, material, hardware, finalPrice } = calculation;
   const dateStr = new Date().toLocaleDateString('ru-RU');
@@ -35,9 +35,9 @@ export default function PrintSheet({
       {/* Шапка бланка */}
       <div className="border-b-2 border-black pb-2 mb-2 flex justify-between items-start print-card break-inside-avoid">
         <div>
-          <h1 className="text-lg font-bold tracking-tight uppercase leading-tight">{settings.masterName}</h1>
+          <h1 className="text-lg font-bold tracking-tight uppercase leading-tight">{settings?.masterName}</h1>
           <p className="text-[11px] text-gray-700 mt-0.5">
-            Тел: {settings.masterPhone} · Индивидуальное изготовление мебели
+            Тел: {settings?.masterPhone} · Индивидуальное изготовление мебели
           </p>
         </div>
         <div className="text-right">
@@ -58,12 +58,12 @@ export default function PrintSheet({
       </div>
 
       {/* Данные клиента и адрес объекта */}
-      <div className="border border-black p-2 mb-2.5 flex justify-between items-center text-[11px] bg-gray-50 print-card break-inside-avoid">
-        <div>
+      <div className="border border-black p-2 mb-2.5 flex justify-between items-center gap-3 text-[11px] bg-gray-50 print-card break-inside-avoid">
+        <div className="min-w-0">
           <span className="font-bold">Заказчик:</span> {clientInfo?.name ? clientInfo.name : '—'}
           {clientInfo?.phone && <span className="ml-2 font-mono">({clientInfo.phone})</span>}
         </div>
-        <div>
+        <div className="min-w-0 text-right">
           <span className="font-bold">Адрес замера / монтажа:</span> {clientInfo?.address ? clientInfo.address : 'Уточняется при договоре'}
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function PrintSheet({
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-bold mb-3">Исполнитель ({settings.masterName}):</div>
+            <div className="text-[11px] font-bold mb-3">Исполнитель ({settings?.masterName}):</div>
             <div className="border-b border-black pb-1 mb-0.5"></div>
             <div className="text-[9px] text-gray-500 flex justify-between">
               <span>(подпись)</span>
